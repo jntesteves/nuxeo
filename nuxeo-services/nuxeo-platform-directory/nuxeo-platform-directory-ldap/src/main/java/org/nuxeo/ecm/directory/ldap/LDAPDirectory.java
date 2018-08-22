@@ -30,6 +30,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
@@ -332,6 +333,21 @@ public class LDAPDirectory extends AbstractDirectory {
         } else {
             return idFilter;
         }
+    }
+
+    public String addBaseFilter(String filter) {
+        List<String> filters = new ArrayList<>();
+        // NXP-2461: always add control on id field in base filter
+        String idFilter = '(' + getFieldMapper().getBackendField(getIdField()) + "=*)";
+        filters.add(idFilter);
+        if (StringUtils.isNotBlank(baseFilter)) {
+            if (!baseFilter.startsWith("(")) {
+                baseFilter = '(' + baseFilter + ')';
+            }
+            filters.add(baseFilter);
+        }
+        filters.add(filter);
+        return "(&" + StringUtils.join(filters) + ')';
     }
 
     protected ContextProvider getTestServer() {

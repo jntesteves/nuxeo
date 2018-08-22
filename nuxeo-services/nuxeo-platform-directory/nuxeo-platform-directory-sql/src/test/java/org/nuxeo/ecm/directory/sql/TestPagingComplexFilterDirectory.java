@@ -80,6 +80,7 @@ public class TestPagingComplexFilterDirectory {
         }
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     public void testComplexFilter() {
         try (Session session = directoryService.open(DIR)) {

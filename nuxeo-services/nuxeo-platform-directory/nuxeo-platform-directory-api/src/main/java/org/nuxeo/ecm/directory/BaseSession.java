@@ -42,6 +42,9 @@ import org.nuxeo.ecm.core.api.impl.DocumentModelImpl;
 import org.nuxeo.ecm.core.api.impl.DocumentModelListImpl;
 import org.nuxeo.ecm.core.api.local.ClientLoginModule;
 import org.nuxeo.ecm.core.api.security.SecurityConstants;
+import org.nuxeo.ecm.core.query.sql.model.DefaultQueryVisitor;
+import org.nuxeo.ecm.core.query.sql.model.MultiExpression;
+import org.nuxeo.ecm.core.query.sql.model.Predicate;
 import org.nuxeo.ecm.core.schema.types.Field;
 import org.nuxeo.ecm.directory.BaseDirectoryDescriptor.SubstringMatchType;
 import org.nuxeo.ecm.directory.api.DirectoryDeleteConstraint;
@@ -557,5 +560,39 @@ public abstract class BaseSession implements Session, EntrySource {
 
     /** To be implemented for specific deletion. */
     protected abstract void deleteEntryWithoutReferences(String id);
+
+    /**
+     * Visitor for a query to check if it contains a reference to the password field.
+     *
+     * @since 10.3
+     */
+    public static class PasswordFieldDetector extends DefaultQueryVisitor {
+
+        private static final long serialVersionUID = 1L;
+
+        protected boolean hasPasswordField;
+
+        protected final String passwordField;
+
+        /**
+         * Checks if the given predicate contains the password field.
+         */
+        public static boolean hasPasswordField(Predicate predicate, String passwordField) {
+            PasswordFieldDetector visitor = new PasswordFieldDetector(passwordField);
+            visitor.visitMultiExpression((MultiExpression) predicate);
+            return visitor.hasPasswordField;
+        }
+
+        public PasswordFieldDetector(String passwordField) {
+            this.passwordField = passwordField;
+        }
+
+        @Override
+        public void visitReference(org.nuxeo.ecm.core.query.sql.model.Reference node) {
+            if (node.name.equals(passwordField)) {
+                hasPasswordField = true;
+            }
+        }
+    }
 
 }

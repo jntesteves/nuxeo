@@ -38,6 +38,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.junit.Ignore;
 import org.junit.Test;
@@ -48,6 +49,10 @@ import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.DocumentModelList;
 import org.nuxeo.ecm.core.api.model.PropertyNotFoundException;
 import org.nuxeo.ecm.core.management.api.ProbeStatus;
+import org.nuxeo.ecm.core.query.QueryParseException;
+import org.nuxeo.ecm.core.query.sql.model.OrderByExprs;
+import org.nuxeo.ecm.core.query.sql.model.Predicates;
+import org.nuxeo.ecm.core.query.sql.model.QueryBuilder;
 import org.nuxeo.ecm.directory.BaseSession;
 import org.nuxeo.ecm.directory.DirectoryException;
 import org.nuxeo.ecm.directory.Session;
@@ -936,6 +941,80 @@ public class TestLDAPSession extends LDAPDirectoryTestCase {
             assertEquals("user2", entries.get(2).getId());
             assertEquals("user1", entries.get(3).getId());
         }
+    }
+
+    @Test
+    public void testQueryWithBuilder() throws Exception {
+        try (Session session = getLDAPDirectory("userDirectory").getSession()) {
+            // everything (empty predicates)
+            QueryBuilder queryBuilder = new QueryBuilder();
+            DocumentModelList list = session.query(queryBuilder, false, false);
+            assertUsers(list, "Administrator", "user_1", "user_3");
+
+            // username = 'user_1'
+            queryBuilder = new QueryBuilder().predicates(Predicates.eq("username", "user_1"));
+            list = session.query(queryBuilder, false, false);
+            assertUsers(list, "user_1");
+
+            // username = 'user_1' OR username = 'Administrator'
+            queryBuilder = new QueryBuilder().predicates(
+                    Predicates.or(Predicates.eq("username", "user_1"), Predicates.eq("username", "Administrator")));
+            list = session.query(queryBuilder, false, false);
+            assertUsers(list, "Administrator", "user_1");
+
+            // username = 'user_1' AND firstName = 'NotMe'
+            queryBuilder = new QueryBuilder().predicates(
+                    Predicates.and(Predicates.eq("username", "user_1"), Predicates.eq("firstName", "NotMe")));
+            list = session.query(queryBuilder, false, false);
+            assertUsers(list); // empty
+
+            // order/paging/totalSize
+
+            // no count total
+            queryBuilder = new QueryBuilder().order(OrderByExprs.asc("username")).limit(1);
+            list = session.query(queryBuilder, false, false);
+            assertUsers(list, "Administrator");
+            assertEquals(-2, list.totalSize());
+
+            // count total
+            queryBuilder = new QueryBuilder().order(OrderByExprs.desc("username")).limit(1);
+            list = session.query(queryBuilder, false, true);
+            assertUsers(list, "user_3");
+            assertEquals(3, list.totalSize());
+
+            // offset
+            queryBuilder = new QueryBuilder().order(OrderByExprs.desc("username")).limit(1).offset(1);
+            list = session.query(queryBuilder, false, true);
+            assertUsers(list, "user_1");
+            assertEquals(3, list.totalSize());
+
+            // error cases
+
+            // cannot filter on password
+            queryBuilder = new QueryBuilder().predicates(Predicates.eq("password", "pw"));
+            try {
+                session.query(queryBuilder, false, false);
+                fail("should throw");
+            } catch (DirectoryException e) {
+                assertEquals("Cannot filter on password", e.getMessage());
+            }
+
+            // no such column
+            queryBuilder = new QueryBuilder().predicates(Predicates.eq("notAProperty", "foo"));
+            try {
+                session.query(queryBuilder, false, false);
+                fail("should throw");
+            } catch (QueryParseException e) {
+                assertEquals("No column: notAProperty for directory: userDirectory", e.getMessage());
+            }
+        }
+    }
+
+    protected static void assertUsers(DocumentModelList list, String... expected) {
+        Set<String> users = list.stream()
+                                .map(doc -> (String) doc.getProperty(USER_SCHEMANAME, "username"))
+                                .collect(Collectors.toSet());
+        assertEquals(new HashSet<>(Arrays.asList(expected)), users);
     }
 
     @Test

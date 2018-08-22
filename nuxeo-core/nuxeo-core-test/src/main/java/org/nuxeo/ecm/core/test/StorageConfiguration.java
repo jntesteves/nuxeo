@@ -67,7 +67,7 @@ public class StorageConfiguration {
 
     public static final String CORE_MARKLOGIC = "marklogic";
 
-    public static final String DEFAULT_CORE = CORE_VCS;
+    public static final String DEFAULT_CORE = CORE_MONGODB;
 
     private static final String MONGODB_SERVER_PROPERTY = "nuxeo.test.mongodb.server";
 
