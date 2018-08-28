@@ -27,6 +27,10 @@
     <codec name="avroJson" class="org.nuxeo.runtime.codec.AvroCodecFactory">
       <option name="encoding">json</option>
     </codec>
+    <!--<codec name="avroConfluent" class="org.nuxeo.runtime.codec.AvroCodecFactory">-->
+      <!--<option name="encoding">confluent</option>-->
+      <!--<option name="schemaRegistryUrls">http://localhost:8081</option>-->
+    <!--</codec>-->
   </extension>
 
 </component>
