@@ -134,6 +134,8 @@ public class NuxeoRequestControllerFilter implements Filter {
             boolean isCached = config.isCached();
             if (isCached) {
                 addCacheHeader(httpResponse, config.isPrivate(), config.getCacheTime());
+            } else if (config.isPrivate()) {
+                httpResponse.setHeader("Cache-Control", "private, no-cache, no-store, must-revalidate");
             }
         }
 
@@ -308,7 +310,9 @@ public class NuxeoRequestControllerFilter implements Filter {
 
     /**
      * Set cache parameters to httpResponse.
+     * @deprecated Since 10.3
      */
+    @Deprecated
     public static void addCacheHeader(HttpServletResponse httpResponse, Boolean isPrivate, String cacheTime) {
         if (isPrivate) {
             httpResponse.setHeader("Cache-Control", "private, max-age=" + cacheTime);
