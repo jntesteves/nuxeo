@@ -164,4 +164,16 @@ public class TestService {
         assertFalse(rh.containsKey("Warning"));
     }
 
+    /**
+     * @since 10.3
+     */
+    @Test
+    public void testAdminPatterns() {
+        RequestControllerService requestControllerService = (RequestControllerService) requestControllerManager;
+        RequestFilterConfig config = requestControllerService.computeConfigForRequest(
+                "/nuxeo/nxadmin/default/default-domain@view_admin?tabIds=NUXEO_ADMIN");
+        assertNotNull(config);
+        assertFalse(config.isCached());
+        assertTrue(config.isPrivate());
+    }
 }
