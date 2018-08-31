@@ -321,6 +321,8 @@ public class ComputationRunner implements Runnable, RebalanceListener {
                 checkpoint();
                 completed = true;
                 inCheckpointRecords = inRecords;
+            } catch (Exception e) {
+                log.error(e, e);
             } finally {
                 if (!completed) {
                     log.error(metadata.name() + ": CHECKPOINT FAILURE: Resume may create duplicates.");
