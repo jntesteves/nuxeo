@@ -28,15 +28,45 @@ import org.nuxeo.ecm.core.test.DefaultRepositoryInit;
  */
 public class DocumentSetRepositoryInit extends DefaultRepositoryInit {
 
-    private static final int SIZE = 10;
+    public static final String ROOT = "/default-domain/workspaces/test";
+
+    public static final int SIZE = 3;
+
+    public static int CREATED_NON_PROXY = 0;
+
+    public static int CREATED_PROXY = 0;
+
+    public static int CREATED = 0;
 
     @Override
     public void populate(CoreSession session) {
         super.populate(session);
-        DocumentModel test = session.getDocument(new PathRef("/default-domain/workspaces/test"));
+        CREATED_NON_PROXY = 0;
+        CREATED_PROXY = 0;
+        DocumentModel test = session.getDocument(new PathRef(ROOT));
+        createChildren(session, test, SIZE);
+        CREATED = CREATED_NON_PROXY + CREATED_PROXY;
+    }
+
+    private void createChildren(CoreSession s, DocumentModel p, int depth) {
+        if (depth == 0) {
+            return;
+        }
         for (int i = 0; i < SIZE; i++) {
-            DocumentModel doc = session.createDocumentModel(test.getPathAsString(), "doc " + i, "ComplexDoc");
-            session.createDocument(doc);
+            DocumentModel child = s.createDocumentModel(p.getPathAsString(), p.getName() + "doc" + i, "ComplexDoc");
+            child = s.createDocument(child);
+            s.saveDocument(child);
+            CREATED_NON_PROXY++;
+
+            s.createProxy(child.getRef(), p.getRef());
+            s.saveDocument(child);
+            CREATED_PROXY++;
+
+            DocumentModel folder = s.createDocumentModel(p.getPathAsString(), p.getName() + "folder" + i, "Folder");
+            folder = s.createDocument(folder);
+            s.saveDocument(folder);
+            CREATED_NON_PROXY++;
+            createChildren(s, folder, depth - 1);
         }
     }
 }

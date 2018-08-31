@@ -47,25 +47,16 @@ import org.nuxeo.runtime.test.runner.TransactionalFeature.Waiter;
 public class CoreBulkFeature implements RunnerFeature {
 
     public static class DummyLogin implements LoginAs {
-
         @Override
         public LoginContext loginAs(String username) throws LoginException {
             return Framework.login();
         }
     }
 
-    public static class BulkWaiter implements Waiter {
-        @Override
-        public boolean await(long deadline) throws InterruptedException {
-            BulkService bulks = Framework.getService(BulkService.class);
-            return bulks.await(Duration.ofMinutes(1));
-        }
-
-    }
-
     @Override
     public void initialize(FeaturesRunner runner) {
-        runner.getFeature(TransactionalFeature.class).addWaiter(new BulkWaiter());
+        runner.getFeature(TransactionalFeature.class)
+              .addWaiter(deadline -> Framework.getService(BulkService.class).await(Duration.ofMinutes(1)));
     }
 
 }

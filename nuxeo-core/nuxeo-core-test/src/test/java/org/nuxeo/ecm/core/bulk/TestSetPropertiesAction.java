@@ -22,6 +22,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.nuxeo.ecm.core.bulk.BulkStatus.State.COMPLETED;
+import static org.nuxeo.ecm.core.bulk.DocumentSetRepositoryInit.SIZE;
+import static org.nuxeo.ecm.core.bulk.actions.SetPropertiesAction.ACTION_NAME;
 
 import java.io.Serializable;
 import java.time.Duration;
@@ -39,9 +41,10 @@ import org.nuxeo.ecm.core.test.annotations.RepositoryConfig;
 import org.nuxeo.runtime.test.runner.Deploy;
 import org.nuxeo.runtime.test.runner.Features;
 import org.nuxeo.runtime.test.runner.FeaturesRunner;
+import org.nuxeo.runtime.test.runner.TransactionalFeature;
 
 @RunWith(FeaturesRunner.class)
-@Features({ CoreBulkFeature.class, CoreFeature.class })
+@Features(CoreFeature.class)
 @Deploy("org.nuxeo.ecm.core.test.tests:OSGI-INF/test-repo-core-types-contrib.xml")
 @RepositoryConfig(init = DocumentSetRepositoryInit.class)
 public class TestSetPropertiesAction {
@@ -52,11 +55,14 @@ public class TestSetPropertiesAction {
     @Inject
     public CoreSession session;
 
+    @Inject
+    public TransactionalFeature txFeature;
+
     @Test
     public void testSetProperties() throws Exception {
 
         DocumentModel model = session.getDocument(new PathRef("/default-domain/workspaces/test"));
-        String nxql = String.format("SELECT * from Document where ecm:parentId='%s'", model.getId());
+        String nxql = String.format("SELECT * from ComplexDoc where ecm:parentId='%s'", model.getId());
 
         String title = "test title";
         String description = "test description";
@@ -70,7 +76,7 @@ public class TestSetPropertiesAction {
         String commandId = service.submit(new BulkCommand().withRepository(session.getRepositoryName())
                                                            .withUsername(session.getPrincipal().getName())
                                                            .withQuery(nxql)
-                                                           .withAction("setProperties")
+                                                           .withAction(ACTION_NAME)
                                                            .withParam("dc:title", title)
                                                            .withParam("dc:description", description)
                                                            .withParam("cpx:complex", complex));
@@ -80,9 +86,11 @@ public class TestSetPropertiesAction {
         BulkStatus status = service.getStatus(commandId);
         assertNotNull(status);
         assertEquals(COMPLETED, status.getState());
-        assertEquals(10, status.getProcessed());
+        assertEquals(SIZE * 2, status.getProcessed());
 
-        for (DocumentModel child : session.getChildren(model.getRef())) {
+        txFeature.nextTransaction();
+
+        for (DocumentModel child : session.query(nxql)) {
             assertEquals(title, child.getTitle());
             assertEquals(description, child.getPropertyValue("dc:description"));
             assertEquals(foo, child.getPropertyValue("cpx:complex/foo"));
