@@ -22,6 +22,7 @@ package org.nuxeo.ecm.platform.ui.web.keycloak;
 import java.lang.reflect.Field;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.catalina.connector.Request;
@@ -46,7 +47,13 @@ public class DeploymentResult {
     private CatalinaHttpFacade facade;
 
     public DeploymentResult(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse) {
-        this.httpServletRequest = httpServletRequest;
+        if (httpServletRequest instanceof HttpServletRequestWrapper) {
+            HttpServletRequestWrapper httpServletRequestWrapper = (HttpServletRequestWrapper) httpServletRequest;
+            this.httpServletRequest = (RequestFacade) httpServletRequestWrapper.getRequest();
+        } else {
+            this.httpServletRequest = httpServletRequest;
+        }
+
         this.httpServletResponse = httpServletResponse;
     }
 
@@ -70,7 +77,7 @@ public class DeploymentResult {
 
         // In Tomcat, a HttpServletRequest and a HttpServletResponse are wrapped in a Facades
         request = unwrapRequest((RequestFacade) httpServletRequest);
-        facade = new CatalinaHttpFacade(request, httpServletResponse);
+        facade = new CatalinaHttpFacade(httpServletResponse, request);
 
         if (keycloakDeployment == null) {
             keycloakDeployment = deploymentContext.resolveDeployment(facade);

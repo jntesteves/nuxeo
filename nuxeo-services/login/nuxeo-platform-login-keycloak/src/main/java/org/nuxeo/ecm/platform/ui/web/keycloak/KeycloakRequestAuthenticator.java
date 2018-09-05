@@ -31,12 +31,12 @@ import org.apache.catalina.realm.GenericPrincipal;
 import org.apache.tomcat.util.descriptor.web.LoginConfig;
 import org.keycloak.KeycloakPrincipal;
 import org.keycloak.adapters.AdapterTokenStore;
-import org.keycloak.adapters.AuthChallenge;
-import org.keycloak.adapters.AuthOutcome;
 import org.keycloak.adapters.KeycloakDeployment;
 import org.keycloak.adapters.OAuthRequestAuthenticator;
 import org.keycloak.adapters.RefreshableKeycloakSecurityContext;
 import org.keycloak.adapters.RequestAuthenticator;
+import org.keycloak.adapters.spi.AuthChallenge;
+import org.keycloak.adapters.spi.AuthOutcome;
 import org.keycloak.adapters.tomcat.CatalinaCookieTokenStore;
 import org.keycloak.adapters.tomcat.CatalinaHttpFacade;
 import org.keycloak.adapters.tomcat.CatalinaSessionTokenStore;
@@ -86,11 +86,7 @@ public class KeycloakRequestAuthenticator extends RequestAuthenticator {
             if (loginConfig == null) {
                 loginConfig = request.getContext().getLoginConfig();
             }
-            if (challenge.errorPage()) {
-                if (forwardToErrorPageInternal(request, response, loginConfig)) {
-                    return AuthOutcome.FAILED;
-                }
-            }
+
             challenge.challenge(facade);
         }
         return AuthOutcome.FAILED;
@@ -162,7 +158,7 @@ public class KeycloakRequestAuthenticator extends RequestAuthenticator {
     }
 
     @Override
-    protected String getHttpSessionId(boolean create) {
+    protected String changeHttpSessionId(boolean create) {
         HttpSession session = request.getSession(create);
         return session != null ? session.getId() : null;
     }

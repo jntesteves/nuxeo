@@ -36,7 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Plugin for the UserMapper to manage mapping between Ketcloack user and Nuxeo counterpart
+ * Plugin for the UserMapper to manage mapping between Keycloak user and Nuxeo counterpart
  *
  * @since 7.4
  */
